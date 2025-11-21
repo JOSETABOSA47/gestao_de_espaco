@@ -6,35 +6,34 @@ import os
 import hashlib
 
 # --- CONFIGURAÇÃO DA PÁGINA (LINHA OBRIGATÓRIA NO INÍCIO) ---
-st.set_page_config(page_title="Sistema Logístico", layout="wide", page_icon="🔐")
+st.set_page_config(
+    page_title="Portal Logístico",
+    page_icon="logo.png", # Ou "🚛" se ainda não subiu a logo
+    layout="wide",
+    initial_sidebar_state="expanded" # <--- ISSO FORÇA O MENU A APARECER ABERTO
+)
 
 # ==============================================================================
-# 🎨 CSS PARA REMOVER TUDO (MENU, RODAPÉ, BARRA COLORIDA E BOTÕES)
+# 2. CSS VISUAL (CORRIGIDO PARA NÃO SUMIR COM A BARRA LATERAL)
 # ==============================================================================
 hide_streamlit_style = """
             <style>
-            /* Esconde o Menu Hamburguer (3 riscos) no topo */
+            /* Esconde o Menu de Configurações (3 pontinhos no canto direito) */
             #MainMenu {visibility: hidden;}
             
-            /* Esconde o Rodapé (Made with Streamlit) */
+            /* Esconde o Rodapé 'Made with Streamlit' */
             footer {visibility: hidden;}
             
-            /* Esconde o Cabeçalho colorido padrão */
-            header {visibility: hidden;}
-            
-            /* Esconde a barra de ferramentas inferior (onde aparece sua foto) */
-            div[data-testid="stToolbar"] {visibility: hidden;}
-            div[data-testid="stDecoration"] {visibility: hidden;}
-            div[data-testid="stStatusWidget"] {visibility: hidden;}
-            
-            /* Ajuste para subir o conteúdo já que removemos o cabeçalho */
-            .block-container {
-                padding-top: 0rem;
-                padding-bottom: 1rem;
-            }
-            
-            /* Se houver botão de deploy, esconde também */
+            /* Esconde o Botão de Deploy (se aparecer) */
             .stDeployButton {display:none;}
+            
+            /* Esconde a decoração colorida do topo, MAS MANTÉM O BOTÃO DO MENU */
+            div[data-testid="stDecoration"] {visibility: hidden;}
+            
+            /* Ajuste fino para subir o conteúdo */
+            .block-container {
+                padding-top: 1rem;
+            }
             </style>
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
