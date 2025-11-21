@@ -17,23 +17,38 @@ st.set_page_config(
 # 2. CSS VISUAL (CORRIGIDO PARA NÃO SUMIR COM A BARRA LATERAL)
 # ==============================================================================
 # Remove ícones e barra superior do Streamlit
-hide_streamlit_style = """
+hide_streamlit_mobile = """
 <style>
-/* Remove o menu do Streamlit (os três pontinhos) */
-#MainMenu {visibility: hidden;}
 
-/* Remove o botão de edição do código */
-button[kind="header"], .st-emotion-cache-15ecox0 {display: none !important;}
+/* Remove rodapé Streamlit no navegador e no WebView */
+footer, .st-emotion-cache-16txtl3, .st-emotion-cache-q8sbsg {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
 
-/* Remove o rodapé "Made with Streamlit" */
-footer {visibility: hidden;}
+/* Remove o menu dos 3 pontinhos do Streamlit */
+#MainMenu, header[data-testid="stHeader"] div:nth-child(3) {
+    display: none !important;
+}
 
-/* Remove o ícone do GitHub no header */
-header div:nth-child(3) {display: none !important;}
+/* Remove o botão "Edit" */
+button[kind="header"] {
+    display: none !important;
+}
+
+/* Remove a marca d’água do Streamlit em celulares */
+.stApp footer {
+    display: none !important;
+}
+
 </style>
 """
 
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+st.markdown(hide_streamlit_mobile, unsafe_allow_html=True)
+
 
 # ==============================================================================
 # 1. Defina aqui seu usuário e senha MESTRES.
