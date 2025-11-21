@@ -16,27 +16,25 @@ st.set_page_config(
 # ==============================================================================
 # 2. CSS VISUAL (CORRIGIDO PARA NÃO SUMIR COM A BARRA LATERAL)
 # ==============================================================================
+# Remove ícones e barra superior do Streamlit
 hide_streamlit_style = """
-            <style>
-            /* Esconde o Menu de Configurações (3 pontinhos no canto direito) */
-            #MainMenu {visibility: hidden;}
-            
-            /* Esconde o Rodapé 'Made with Streamlit' */
-            footer {visibility: hidden;}
-            
-            /* Esconde o Botão de Deploy (se aparecer) */
-            .stDeployButton {display:none;}
-            
-            /* Esconde a decoração colorida do topo, MAS MANTÉM O BOTÃO DO MENU */
-            div[data-testid="stDecoration"] {visibility: hidden;}
-            
-            /* Ajuste fino para subir o conteúdo */
-            .block-container {
-                padding-top: 1rem;
-            }
-            </style>
-            """
+<style>
+/* Remove o menu do Streamlit (os três pontinhos) */
+#MainMenu {visibility: hidden;}
+
+/* Remove o botão de edição do código */
+button[kind="header"], .st-emotion-cache-15ecox0 {display: none !important;}
+
+/* Remove o rodapé "Made with Streamlit" */
+footer {visibility: hidden;}
+
+/* Remove o ícone do GitHub no header */
+header div:nth-child(3) {display: none !important;}
+</style>
+"""
+
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 # ==============================================================================
 # 1. Defina aqui seu usuário e senha MESTRES.
 # Eles NÃO podem ser alterados pelo site, apenas editando este código.
