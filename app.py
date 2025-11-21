@@ -47,7 +47,7 @@ try:
     SENHA_MASTER_FIXA = st.secrets["admin_password"]
 except FileNotFoundError:
     # Senha provisória apenas para quando você testar no seu PC local
-    SENHA_MASTER_FIXA = "SenhaTesteLocal"
+    SENHA_MASTER_FIXA = "123456"
 
 # ==============================================================================
 
