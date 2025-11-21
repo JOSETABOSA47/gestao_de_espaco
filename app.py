@@ -9,18 +9,32 @@ import hashlib
 st.set_page_config(page_title="Sistema Logístico", layout="wide", page_icon="🔐")
 
 # ==============================================================================
-# 🎨 AQUI: COLE O CÓDIGO PARA ESCONDER O MENU (VISUAL DE APP)
+# 🎨 CSS PARA REMOVER TUDO (MENU, RODAPÉ, BARRA COLORIDA E BOTÕES)
 # ==============================================================================
 hide_streamlit_style = """
             <style>
+            /* Esconde o Menu Hamburguer (3 riscos) no topo */
             #MainMenu {visibility: hidden;}
+            
+            /* Esconde o Rodapé (Made with Streamlit) */
             footer {visibility: hidden;}
+            
+            /* Esconde o Cabeçalho colorido padrão */
             header {visibility: hidden;}
-            /* Remove padding do topo para ganhar espaço em celular */
+            
+            /* Esconde a barra de ferramentas inferior (onde aparece sua foto) */
+            div[data-testid="stToolbar"] {visibility: hidden;}
+            div[data-testid="stDecoration"] {visibility: hidden;}
+            div[data-testid="stStatusWidget"] {visibility: hidden;}
+            
+            /* Ajuste para subir o conteúdo já que removemos o cabeçalho */
             .block-container {
-                padding-top: 1rem;
+                padding-top: 0rem;
                 padding-bottom: 1rem;
             }
+            
+            /* Se houver botão de deploy, esconde também */
+            .stDeployButton {display:none;}
             </style>
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
