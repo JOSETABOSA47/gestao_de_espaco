@@ -41,8 +41,14 @@ st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 # ==============================================================================
 # 1. Defina aqui seu usuário e senha MESTRES.
 # Eles NÃO podem ser alterados pelo site, apenas editando este código.
-USUARIO_MASTER = "admin"
-SENHA_MASTER_FIXA = "123456"  # <--- ALTERE ISSO AQUI PARA SUA SENHA REAL
+USUARIO_MASTER = "admintabosa"
+# Tenta pegar a senha dos Segredos do Streamlit (Nuvem)
+# Se não encontrar (ex: rodando no seu PC sem configurar), usa uma senha padrão
+try:
+    SENHA_MASTER_FIXA = st.secrets["admin_password"]
+except FileNotFoundError:
+    # Senha provisória apenas para quando você testar no seu PC local
+    SENHA_MASTER_FIXA = "SenhaTesteLocal"
 
 # ==============================================================================
 
