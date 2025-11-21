@@ -13,6 +13,15 @@ st.set_page_config(
     initial_sidebar_state="expanded" # <--- ISSO FORÇA O MENU A APARECER ABERTO
 )
 
+st.markdown("""
+<style>
+html, body, .stApp {
+    background-color: #08131F !important;   /* Fundo igual ao do tema */
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 # ==============================================================================
 # 2. CSS VISUAL (CORRIGIDO PARA NÃO SUMIR COM A BARRA LATERAL)
 # ==============================================================================
@@ -49,6 +58,21 @@ button[kind="header"] {
 
 st.markdown(hide_streamlit_mobile, unsafe_allow_html=True)
 
+
+st.markdown("""
+<style>
+.stButton>button {
+    background-color: #1A87C9 !important;
+    color: white !important;
+    border-radius: 8px !important;
+    border: 1px solid #1A87C9 !important;
+}
+.stButton>button:hover {
+    background-color: #3FAE2A !important; /* verde da logo */
+    border-color: #3FAE2A !important;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # ==============================================================================
 # 1. Defina aqui seu usuário e senha MESTRES.
