@@ -5,62 +5,20 @@ import json
 import os
 import hashlib
 
-# --- CONFIGURAÇÃO DA PÁGINA (LINHA OBRIGATÓRIA NO INÍCIO) ---
+# --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
     page_title="Portal Logístico",
-    page_icon="logo.png", # Ou "🚛" se ainda não subiu a logo
+    page_icon="logo.png", 
     layout="wide",
-    initial_sidebar_state="expanded" # <--- ISSO FORÇA O MENU A APARECER ABERTO
+    initial_sidebar_state="expanded"
 )
 
+# --- CSS PERSONALIZADO ---
 st.markdown("""
 <style>
 html, body, .stApp {
-    background-color: #08131F !important;   /* Fundo igual ao do tema */
+    background-color: #08131F !important;
 }
-</style>
-""", unsafe_allow_html=True)
-
-
-# ==============================================================================
-# 2. CSS VISUAL (CORRIGIDO PARA NÃO SUMIR COM A BARRA LATERAL)
-# ==============================================================================
-# Remove ícones e barra superior do Streamlit
-hide_streamlit_mobile = """
-<style>
-
-/* Remove rodapé Streamlit no navegador e no WebView */
-footer, .st-emotion-cache-16txtl3, .st-emotion-cache-q8sbsg {
-    display: none !important;
-    visibility: hidden !important;
-    height: 0px !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-
-/* Remove o menu dos 3 pontinhos do Streamlit */
-#MainMenu, header[data-testid="stHeader"] div:nth-child(3) {
-    display: none !important;
-}
-
-/* Remove o botão "Edit" */
-button[kind="header"] {
-    display: none !important;
-}
-
-/* Remove a marca d’água do Streamlit em celulares */
-.stApp footer {
-    display: none !important;
-}
-
-</style>
-"""
-
-st.markdown(hide_streamlit_mobile, unsafe_allow_html=True)
-
-
-st.markdown("""
-<style>
 .stButton>button {
     background-color: #1A87C9 !important;
     color: white !important;
@@ -68,29 +26,45 @@ st.markdown("""
     border: 1px solid #1A87C9 !important;
 }
 .stButton>button:hover {
-    background-color: #3FAE2A !important; /* verde da logo */
+    background-color: #3FAE2A !important;
     border-color: #3FAE2A !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
+# CSS PARA LIMPAR A INTERFACE (MANTENDO MENU)
+hide_streamlit_style = """
+            <style>
+            [data-testid="stToolbar"] {display: none !important;}
+            [data-testid="stDecoration"] {display: none !important;}
+            footer {display: none !important;}
+            header {background-color: transparent !important;}
+            [data-testid="stSidebarCollapsedControl"] button {
+                color: white !important;
+                font-weight: bold;
+            }
+            </style>
+            """
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 # ==============================================================================
-# 1. Defina aqui seu usuário e senha MESTRES.
-# Eles NÃO podem ser alterados pelo site, apenas editando este código.
+# SEGURANÇA E CONFIGURAÇÕES
+# ==============================================================================
 USUARIO_MASTER = "admintabosa"
-# Tenta pegar a senha dos Segredos do Streamlit (Nuvem)
-# Se não encontrar (ex: rodando no seu PC sem configurar), usa uma senha padrão
 try:
     SENHA_MASTER_FIXA = st.secrets["admin_password"]
 except FileNotFoundError:
-    # Senha provisória apenas para quando você testar no seu PC local
     SENHA_MASTER_FIXA = "123456"
 
-# ==============================================================================
-
 ARQUIVO_CREDENCIAIS = 'credenciais.json'
-DADOS_PADRAO = {
+# Dados Padrão VEÍCULOS
+DADOS_PADRAO_FROTA = {
     "VUC Padrão": {"categoria": "Veículo", "comp": 4.50, "larg": 2.20, "alt": 2.30, "peso_max": 3500},
+}
+# Dados Padrão CAIXAS
+DADOS_PADRAO_CAIXAS = {
+    "Caixa Padrão P": {"comp": 30, "larg": 20, "alt": 20, "peso": 1.5},
+    "Caixa Padrão M": {"comp": 50, "larg": 40, "alt": 40, "peso": 5.0},
 }
 
 # --- FUNÇÕES DE SEGURANÇA ---
@@ -111,44 +85,51 @@ def carregar_usuarios():
     return {}
 
 def salvar_novo_usuario(usuario, senha):
-    # TRAVA DE SEGURANÇA: Impede criar usuário com nome do patrão
-    if usuario.lower() == USUARIO_MASTER:
-        return False 
-        
+    if usuario.lower() == USUARIO_MASTER: return False 
     usuarios = carregar_usuarios()
     if usuario in usuarios: return False
-    
     usuarios[usuario] = criptografar_senha(senha)
     with open(ARQUIVO_CREDENCIAIS, 'w', encoding='utf-8') as f:
         json.dump(usuarios, f, indent=4)
     return True
 
-# --- GERENCIAMENTO DE DADOS ---
+# --- GERENCIAMENTO DE ARQUIVOS (FROTA E CAIXAS) ---
 def pegar_cliente_ativo():
     if st.session_state.get('usuario_logado') == USUARIO_MASTER:
-        # Se o admin não selecionou ninguém ainda, mostra erro ou vazio
         return st.session_state.get('cliente_visualizado', 'admin_sistema')
     else:
         return st.session_state.get('usuario_logado')
 
-def pegar_nome_arquivo():
-    cliente = pegar_cliente_ativo()
-    return f"dados_{cliente}.json"
+# 1. FROTA (Veículos/Armazéns)
+def pegar_arquivo_frota():
+    return f"dados_{pegar_cliente_ativo()}.json"
 
-def carregar_dados_cliente():
-    arquivo = pegar_nome_arquivo()
+def carregar_dados_frota():
+    arquivo = pegar_arquivo_frota()
     if os.path.exists(arquivo):
         try:
-            with open(arquivo, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
-            return DADOS_PADRAO.copy()
-    else:
-        return DADOS_PADRAO.copy()
+            with open(arquivo, 'r', encoding='utf-8') as f: return json.load(f)
+        except: return DADOS_PADRAO_FROTA.copy()
+    return DADOS_PADRAO_FROTA.copy()
 
-def salvar_dados_cliente(dados):
-    arquivo = pegar_nome_arquivo()
-    with open(arquivo, 'w', encoding='utf-8') as f:
+def salvar_dados_frota(dados):
+    with open(pegar_arquivo_frota(), 'w', encoding='utf-8') as f:
+        json.dump(dados, f, indent=4, ensure_ascii=False)
+
+# 2. CAIXAS (Produtos)
+def pegar_arquivo_caixas():
+    return f"caixas_{pegar_cliente_ativo()}.json"
+
+def carregar_dados_caixas():
+    arquivo = pegar_arquivo_caixas()
+    if os.path.exists(arquivo):
+        try:
+            with open(arquivo, 'r', encoding='utf-8') as f: return json.load(f)
+        except: return DADOS_PADRAO_CAIXAS.copy()
+    return DADOS_PADRAO_CAIXAS.copy()
+
+def salvar_dados_caixas(dados):
+    with open(pegar_arquivo_caixas(), 'w', encoding='utf-8') as f:
         json.dump(dados, f, indent=4, ensure_ascii=False)
 
 # --- PDF ---
@@ -185,37 +166,35 @@ def gerar_pdf(lista_carga, nome_espaco, categoria, ocupacao_vol, ocupacao_peso, 
         pdf.ln()
     return bytes(pdf.output(dest='S').encode('latin-1'))
 
-# --- STATES ---
+# --- SESSÃO E LOGIN ---
 if 'logado' not in st.session_state:
     st.session_state['logado'] = False
     st.session_state['usuario_logado'] = None
 if 'cliente_visualizado' not in st.session_state:
     st.session_state['cliente_visualizado'] = None
 
-# --- LOGIN LÓGICA BLINDADA ---
+# Ações de Login
 def acao_login():
     user = st.session_state.login_user
     pwd = st.session_state.login_pwd
     
-    # 1. VERIFICAÇÃO SUPREMA (ADMIN)
-    # Verifica primeiro se é o dono, comparando com a variável fixa no código
     if user == USUARIO_MASTER and pwd == SENHA_MASTER_FIXA:
         st.session_state['logado'] = True
         st.session_state['usuario_logado'] = USUARIO_MASTER
-        st.session_state['cliente_visualizado'] = None # Admin começa sem selecionar ninguém
-        # Cache reset
+        st.session_state['cliente_visualizado'] = None
         st.session_state.banco_dados = {} 
+        st.session_state.banco_caixas = {}
         st.session_state.carga_atual = []
-        st.success("Bem-vindo, Chefe!")
         return
 
-    # 2. VERIFICAÇÃO COMUM (CLIENTES)
     usuarios_db = carregar_usuarios()
     if user in usuarios_db and verificar_senha(pwd, usuarios_db[user]):
         st.session_state['logado'] = True
         st.session_state['usuario_logado'] = user
         st.session_state['cliente_visualizado'] = user
-        st.session_state.banco_dados = carregar_dados_cliente()
+        # Carrega dados específicos do cliente
+        st.session_state.banco_dados = carregar_dados_frota()
+        st.session_state.banco_caixas = carregar_dados_caixas()
         st.session_state.carga_atual = []
     else:
         st.error("Acesso negado.")
@@ -224,21 +203,17 @@ def acao_cadastro():
     novo_user = st.session_state.new_user
     nova_senha = st.session_state.new_pwd
     conf_senha = st.session_state.conf_pwd
-    
-    # TRAVA 1: Nome proibido
     if novo_user.lower() == USUARIO_MASTER:
-        st.error("Este nome de usuário é reservado pelo sistema.")
+        st.error("Nome reservado.")
         return
-
     if nova_senha != conf_senha:
         st.error("Senhas não conferem.")
         return
     if len(novo_user) < 3:
-        st.error("Usuário curto demais.")
+        st.error("Usuário curto.")
         return
-        
     if salvar_novo_usuario(novo_user, nova_senha):
-        st.success(f"Usuário {novo_user} criado! Faça login.")
+        st.success("Criado! Faça login.")
     else:
         st.error("Usuário já existe.")
 
@@ -267,103 +242,134 @@ if not st.session_state['logado']:
 
 # ================= SISTEMA LOGADO =================
 
+# Inicializa variáveis se não existirem
+if 'banco_dados' not in st.session_state or st.session_state.banco_dados is None:
+    st.session_state.banco_dados = carregar_dados_frota()
+if 'banco_caixas' not in st.session_state or st.session_state.banco_caixas is None:
+    st.session_state.banco_caixas = carregar_dados_caixas()
+
 with st.sidebar:
     usuario_atual = st.session_state['usuario_logado']
     
     # === PAINEL DO DONO ===
     if usuario_atual == USUARIO_MASTER:
         st.markdown("### 👑 SUPER ADMIN")
-        st.success("Modo Deus Ativado")
-        
         todos_usuarios = list(carregar_usuarios().keys())
-        
         if not todos_usuarios:
-            st.warning("Nenhum cliente cadastrado ainda.")
+            st.warning("Sem clientes.")
         else:
-            # Lógica para manter a seleção
-            opcoes_clientes = ["-- Selecione um Cliente --"] + todos_usuarios
-            
+            opcoes_clientes = ["-- Selecione --"] + todos_usuarios
             idx = 0
             if st.session_state['cliente_visualizado'] in todos_usuarios:
                 idx = opcoes_clientes.index(st.session_state['cliente_visualizado'])
-                
-            cliente_selecionado = st.selectbox("Gerenciar Cliente:", opcoes_clientes, index=idx)
             
-            if cliente_selecionado != "-- Selecione um Cliente --":
+            cliente_selecionado = st.selectbox("Cliente:", opcoes_clientes, index=idx)
+            
+            if cliente_selecionado != "-- Selecione --":
                 if cliente_selecionado != st.session_state['cliente_visualizado']:
                     st.session_state['cliente_visualizado'] = cliente_selecionado
-                    st.session_state.banco_dados = carregar_dados_cliente()
+                    st.session_state.banco_dados = carregar_dados_frota()
+                    st.session_state.banco_caixas = carregar_dados_caixas()
                     st.session_state.carga_atual = []
                     st.rerun()
             else:
                 st.session_state['cliente_visualizado'] = None
-        
         st.markdown("---")
-    # ======================
     
-    st.write(f"👤 Logado: **{usuario_atual.upper()}**")
+    st.write(f"👤 **{usuario_atual.upper()}**")
     st.button("Sair", on_click=acao_logout)
     
-    # Se for admin e não tiver selecionado ninguém, para aqui a sidebar
     if usuario_atual == USUARIO_MASTER and not st.session_state['cliente_visualizado']:
-        st.info("👈 Selecione um cliente acima para começar.")
+        st.info("👈 Selecione um cliente.")
     else:
-        # Carrega Menu de Cadastro Normal
-        st.markdown("---")
-        st.header("⚙️ Cadastro")
+        # ==========================================
+        # 1. CADASTRO DE FROTA / ARMAZÉM
+        # ==========================================
+        st.markdown("### 🚛 Frota e Espaços")
+        opcoes_frota = ["-- Novo Veículo --"] + list(st.session_state.banco_dados.keys())
+        item_frota = st.selectbox("Editar Veículo:", opcoes_frota)
         
-        if 'banco_dados' not in st.session_state or st.session_state.banco_dados is None:
-            st.session_state.banco_dados = carregar_dados_cliente()
-
-        opcoes = ["-- Criar Novo --"] + list(st.session_state.banco_dados.keys())
-        item_selecionado = st.selectbox("Item:", opcoes)
-        
-        with st.form("form_cadastro"):
-            if item_selecionado == "-- Criar Novo --":
-                st.subheader("Novo")
-                nome_input = st.text_input("Nome")
-                tipo_input = st.radio("Tipo", ["Veículo", "Armazém"], horizontal=True)
-                c_v = st.number_input("C (m)", value=3.00)
-                l_v = st.number_input("L (m)", value=2.00)
-                a_v = st.number_input("A (m)", value=2.50)
-                p_v = st.number_input("Peso (kg)", value=1000)
+        with st.form("form_frota"):
+            if item_frota == "-- Novo Veículo --":
+                nome_f = st.text_input("Nome (ex: Truck)")
+                tipo_f = st.radio("Tipo", ["Veículo", "Armazém"], horizontal=True)
+                c_f = st.number_input("C (m)", 3.00)
+                l_f = st.number_input("L (m)", 2.00)
+                a_f = st.number_input("A (m)", 2.50)
+                p_f = st.number_input("Peso (kg)", 1000)
             else:
-                dados = st.session_state.banco_dados[item_selecionado]
-                st.subheader("Editar")
-                nome_input = st.text_input("Nome", value=item_selecionado, disabled=True)
-                cat_atual = dados.get('categoria', 'Veículo')
-                tipo_input = st.radio("Tipo", ["Veículo", "Armazém"], index=0 if cat_atual=="Veículo" else 1)
-                c_v = st.number_input("C (m)", value=dados['comp'])
-                l_v = st.number_input("L (m)", value=dados['larg'])
-                a_v = st.number_input("A (m)", value=dados['alt'])
-                p_v = st.number_input("Peso (kg)", value=dados['peso_max'])
-                
-            if st.form_submit_button("Salvar"):
-                nova_data = {"categoria": tipo_input, "comp": c_v, "larg": l_v, "alt": a_v, "peso_max": p_v}
-                if item_selecionado == "-- Criar Novo --" and nome_input:
-                    st.session_state.banco_dados[nome_input] = nova_data
-                elif item_selecionado != "-- Criar Novo --":
-                    st.session_state.banco_dados[item_selecionado] = nova_data
-                salvar_dados_cliente(st.session_state.banco_dados)
+                d = st.session_state.banco_dados[item_frota]
+                nome_f = st.text_input("Nome", value=item_frota, disabled=True)
+                cat_atual = d.get('categoria', 'Veículo')
+                tipo_f = st.radio("Tipo", ["Veículo", "Armazém"], index=0 if cat_atual=="Veículo" else 1)
+                c_f = st.number_input("C (m)", value=d['comp'])
+                l_f = st.number_input("L (m)", value=d['larg'])
+                a_f = st.number_input("A (m)", value=d['alt'])
+                p_f = st.number_input("Peso (kg)", value=d['peso_max'])
+            
+            if st.form_submit_button("Salvar Veículo"):
+                novo_dado = {"categoria": tipo_f, "comp": c_f, "larg": l_f, "alt": a_f, "peso_max": p_f}
+                if item_frota == "-- Novo Veículo --" and nome_f:
+                    st.session_state.banco_dados[nome_f] = novo_dado
+                elif item_frota != "-- Novo Veículo --":
+                    st.session_state.banco_dados[item_frota] = novo_dado
+                salvar_dados_frota(st.session_state.banco_dados)
                 st.rerun()
-                
-        if item_selecionado != "-- Criar Novo --" and st.button("Excluir"):
-            del st.session_state.banco_dados[item_selecionado]
-            salvar_dados_cliente(st.session_state.banco_dados)
+        
+        if item_frota != "-- Novo Veículo --" and st.button("Excluir Veículo"):
+            del st.session_state.banco_dados[item_frota]
+            salvar_dados_frota(st.session_state.banco_dados)
+            st.rerun()
+
+        st.markdown("---")
+
+        # ==========================================
+        # 2. CADASTRO DE CAIXAS / PRODUTOS
+        # ==========================================
+        st.markdown("### 📦 Minhas Caixas")
+        opcoes_caixa = ["-- Nova Caixa --"] + list(st.session_state.banco_caixas.keys())
+        item_caixa = st.selectbox("Editar Caixa:", opcoes_caixa)
+
+        with st.form("form_caixa"):
+            if item_caixa == "-- Nova Caixa --":
+                nome_c = st.text_input("Nome do Produto/Caixa")
+                # Padrão para nova caixa
+                comp_c = st.number_input("Comp (cm)", value=40)
+                larg_c = st.number_input("Larg (cm)", value=30)
+                alt_c = st.number_input("Alt (cm)", value=20)
+                peso_c = st.number_input("Peso Unit (kg)", value=1.0)
+            else:
+                dc = st.session_state.banco_caixas[item_caixa]
+                nome_c = st.text_input("Nome", value=item_caixa, disabled=True)
+                comp_c = st.number_input("Comp (cm)", value=dc['comp'])
+                larg_c = st.number_input("Larg (cm)", value=dc['larg'])
+                alt_c = st.number_input("Alt (cm)", value=dc['alt'])
+                peso_c = st.number_input("Peso Unit (kg)", value=dc['peso'])
+
+            if st.form_submit_button("Salvar Caixa"):
+                nova_caixa = {"comp": comp_c, "larg": larg_c, "alt": alt_c, "peso": peso_c}
+                if item_caixa == "-- Nova Caixa --" and nome_c:
+                    st.session_state.banco_caixas[nome_c] = nova_caixa
+                elif item_caixa != "-- Nova Caixa --":
+                    st.session_state.banco_caixas[item_caixa] = nova_caixa
+                salvar_dados_caixas(st.session_state.banco_caixas)
+                st.rerun()
+
+        if item_caixa != "-- Nova Caixa --" and st.button("Excluir Caixa"):
+            del st.session_state.banco_caixas[item_caixa]
+            salvar_dados_caixas(st.session_state.banco_caixas)
             st.rerun()
 
 # --- ÁREA PRINCIPAL ---
-# Bloqueia tela principal se Admin não escolheu ninguém
 if usuario_atual == USUARIO_MASTER and not st.session_state['cliente_visualizado']:
     st.title("Painel Administrativo")
-    st.info("Selecione um cliente na barra lateral para visualizar e editar a frota dele.")
+    st.info("Selecione um cliente.")
     st.stop()
 
-# Daqui pra baixo roda normal (para cliente ou admin vendo cliente)
 cliente_ativo = pegar_cliente_ativo()
 st.title(f"📦 Gestão de Cargas")
 if usuario_atual == USUARIO_MASTER:
-    st.warning(f"⚠️ Você está editando os dados de: **{cliente_ativo.upper()}**")
+    st.warning(f"⚠️ Editando: **{cliente_ativo.upper()}**")
 
 st.markdown("---")
 
@@ -374,14 +380,14 @@ col1, col2 = st.columns([1, 1.5])
 with col1:
     st.subheader("1. Seleção")
     lista = ["-- Digitar Manual --"] + list(st.session_state.banco_dados.keys())
-    selecao = st.selectbox("Local de Carga", lista)
+    selecao = st.selectbox("Veículo/Armazém", lista)
     
     if selecao == "-- Digitar Manual --":
-        st.info("Modo Rápido")
-        comp_f = st.number_input("Comp (m)", value=5.0)
-        larg_f = st.number_input("Larg (m)", value=2.5)
-        alt_f = st.number_input("Alt (m)", value=2.5)
-        peso_f = st.number_input("Max Peso (kg)", value=5000)
+        st.info("Modo Manual")
+        comp_f = st.number_input("Comp (m)", 5.0)
+        larg_f = st.number_input("Larg (m)", 2.5)
+        alt_f = st.number_input("Alt (m)", 2.5)
+        peso_f = st.number_input("Peso Max (kg)", 5000)
         cat_f = "Personalizado"
     else:
         d = st.session_state.banco_dados[selecao]
@@ -394,18 +400,42 @@ with col1:
     vol_util = vol_total * (1 - (perda/100))
     st.caption(f"Vol. Útil: {vol_util:.2f} m³ | Peso Max: {peso_f} kg")
     
-    st.markdown("#### Adicionar")
+    st.markdown("#### Adicionar Carga")
+    
+    # SELETOR DE CAIXA SALVA (Para preencher automático)
+    lista_caixas_salvas = ["-- Manual --"] + list(st.session_state.banco_caixas.keys())
+    box_selecionada = st.selectbox("Usar Item Salvo:", lista_caixas_salvas)
+
+    # Define valores padrão (inputs)
+    def_c, def_l, def_a, def_p = 40, 30, 20, 1.0
+    
+    if box_selecionada != "-- Manual --":
+        d_box = st.session_state.banco_caixas[box_selecionada]
+        def_c = d_box['comp']
+        def_l = d_box['larg']
+        def_a = d_box['alt']
+        def_p = d_box['peso']
+
     with st.form("add"):
         q = st.number_input("Qtd", 1, value=10)
-        p = st.number_input("Peso Unit (kg)", 0.0, value=1.0)
+        # Se escolheu caixa salva, usa os valores dela como 'value'
+        # Se for manual, o usuário edita livremente
+        p = st.number_input("Peso Unit (kg)", 0.0, value=float(def_p))
+        
         c1, c2, c3 = st.columns(3)
-        cc = c1.number_input("C (cm)", value=40)
-        ll = c2.number_input("L (cm)", value=30)
-        aa = c3.number_input("A (cm)", value=20)
+        cc = c1.number_input("C (cm)", value=int(def_c))
+        ll = c2.number_input("L (cm)", value=int(def_l))
+        aa = c3.number_input("A (cm)", value=int(def_a))
+        
         if st.form_submit_button("➕ Adicionar"):
             v_u = (cc*ll*aa)/1000000
+            # Nome do item na lista
+            desc = box_selecionada if box_selecionada != "-- Manual --" else f"{cc}x{ll}x{aa}"
+            
             st.session_state.carga_atual.append({
-                "Qtd": q, "Dimensões": f"{cc}x{ll}x{aa}",
+                "Qtd": q, 
+                "Dimensões": desc, # Mostra o nome do produto ou as medidas
+                "Medidas Reais": f"{cc}x{ll}x{aa}",
                 "Vol. Unit (m³)": v_u, "Vol. Total (m³)": v_u*q,
                 "Peso Unit (kg)": p, "Peso Total (kg)": p*q
             })
