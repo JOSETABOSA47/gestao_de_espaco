@@ -120,6 +120,33 @@ def salvar_novo_usuario(usuario, senha):
         json.dump(usuarios, f, indent=4)
     return True
 
+# === NOVAS FUNÇÕES DE ADMINISTRAÇÃO (Alterar Senha e Excluir) ===
+def atualizar_senha_usuario(usuario, nova_senha):
+    usuarios = carregar_usuarios()
+    if usuario in usuarios:
+        usuarios[usuario] = criptografar_senha(nova_senha)
+        with open(ARQUIVO_CREDENCIAIS, 'w', encoding='utf-8') as f:
+            json.dump(usuarios, f, indent=4)
+        return True
+    return False
+
+def excluir_usuario_completo(usuario):
+    # 1. Remove do arquivo de credenciais
+    usuarios = carregar_usuarios()
+    if usuario in usuarios:
+        del usuarios[usuario]
+        with open(ARQUIVO_CREDENCIAIS, 'w', encoding='utf-8') as f:
+            json.dump(usuarios, f, indent=4)
+        
+        # 2. Remove arquivos de dados para limpar o servidor
+        try: os.remove(f"dados_{usuario}.json")
+        except: pass
+        try: os.remove(f"caixas_{usuario}.json")
+        except: pass
+        
+        return True
+    return False
+
 # --- GERENCIAMENTO DE ARQUIVOS (FROTA E CAIXAS) ---
 def pegar_cliente_ativo():
     if st.session_state.get('usuario_logado') == USUARIO_MASTER:
@@ -247,7 +274,7 @@ def acao_cadastro():
 def acao_logout():
     st.session_state['logado'] = False
     st.session_state['usuario_logado'] = None
-    st.rerun()
+    # st.rerun()
 
 # ================= TELA LOGIN =================
 if not st.session_state['logado']:
@@ -299,6 +326,39 @@ with st.sidebar:
                     st.session_state.banco_caixas = carregar_dados_caixas()
                     st.session_state.carga_atual = []
                     st.rerun()
+                
+                # ==== AQUI ESTÁ A NOVA ÁREA DE GESTÃO DE CONTA ====
+                with st.expander("⚙️ Gerenciar Conta do Cliente"):
+                    st.markdown(f"**Cliente:** {cliente_selecionado}")
+                    
+                    # 1. TROCAR SENHA
+                    nova_senha_admin = st.text_input("Nova Senha:", type="password", key="adm_new_pass")
+                    if st.button("🔄 Atualizar Senha"):
+                        if len(nova_senha_admin) > 0:
+                            if atualizar_senha_usuario(cliente_selecionado, nova_senha_admin):
+                                st.success("Senha alterada!")
+                            else:
+                                st.error("Erro ao alterar.")
+                        else:
+                            st.warning("Digite uma senha.")
+                    
+                    st.markdown("---")
+                    
+                    # 2. EXCLUIR CLIENTE
+                    st.markdown("🚨 **Zona de Perigo**")
+                    confirmar_exclusao = st.checkbox("Confirmar exclusão definitiva")
+                    if st.button("🗑️ EXCLUIR CLIENTE"):
+                        if confirmar_exclusao:
+                            if excluir_usuario_completo(cliente_selecionado):
+                                st.success(f"Cliente {cliente_selecionado} removido!")
+                                st.session_state['cliente_visualizado'] = None
+                                st.rerun()
+                            else:
+                                st.error("Erro ao excluir.")
+                        else:
+                            st.warning("Marque a caixa acima para confirmar.")
+                # ===================================================
+
             else:
                 st.session_state['cliente_visualizado'] = None
         st.markdown("---")
