@@ -4,6 +4,7 @@ from fpdf import FPDF
 import json
 import os
 import hashlib
+import time
 
 # --- CONFIGURAÇÃO DA PÁGINA (LINHA OBRIGATÓRIA NO INÍCIO) ---
 st.set_page_config(
@@ -120,7 +121,7 @@ def salvar_novo_usuario(usuario, senha):
         json.dump(usuarios, f, indent=4)
     return True
 
-# === NOVAS FUNÇÕES DE ADMINISTRAÇÃO (Alterar Senha e Excluir) ===
+# === FUNÇÕES DE ADMINISTRAÇÃO ===
 def atualizar_senha_usuario(usuario, nova_senha):
     usuarios = carregar_usuarios()
     if usuario in usuarios:
@@ -258,23 +259,24 @@ def acao_cadastro():
     nova_senha = st.session_state.new_pwd
     conf_senha = st.session_state.conf_pwd
     if novo_user.lower() == USUARIO_MASTER:
-        st.error("Nome reservado.")
+        st.toast("Nome reservado.", icon="🚫")
         return
     if nova_senha != conf_senha:
-        st.error("Senhas não conferem.")
+        st.toast("Senhas não conferem.", icon="❌")
         return
     if len(novo_user) < 3:
-        st.error("Usuário curto.")
+        st.toast("Usuário curto.", icon="⚠️")
         return
     if salvar_novo_usuario(novo_user, nova_senha):
-        st.success("Criado! Faça login.")
+        st.toast(f"Usuário {novo_user} criado com sucesso!", icon="✅")
+        time.sleep(1.5) # Pausa para ler a mensagem
     else:
-        st.error("Usuário já existe.")
+        st.toast("Usuário já existe.", icon="❌")
 
 def acao_logout():
     st.session_state['logado'] = False
     st.session_state['usuario_logado'] = None
-    # st.rerun()
+    # Removido st.rerun() para evitar erro de callback
 
 # ================= TELA LOGIN =================
 if not st.session_state['logado']:
@@ -336,7 +338,7 @@ with st.sidebar:
                     if st.button("🔄 Atualizar Senha"):
                         if len(nova_senha_admin) > 0:
                             if atualizar_senha_usuario(cliente_selecionado, nova_senha_admin):
-                                st.success("Senha alterada!")
+                                st.toast("Senha alterada com sucesso!", icon="✅")
                             else:
                                 st.error("Erro ao alterar.")
                         else:
@@ -350,7 +352,8 @@ with st.sidebar:
                     if st.button("🗑️ EXCLUIR CLIENTE"):
                         if confirmar_exclusao:
                             if excluir_usuario_completo(cliente_selecionado):
-                                st.success(f"Cliente {cliente_selecionado} removido!")
+                                st.toast(f"Cliente {cliente_selecionado} removido!", icon="🗑️")
+                                time.sleep(1.5) # Pausa dramática
                                 st.session_state['cliente_visualizado'] = None
                                 st.rerun()
                             else:
@@ -401,11 +404,15 @@ with st.sidebar:
                 elif item_frota != "-- Novo Veículo --":
                     st.session_state.banco_dados[item_frota] = novo_dado
                 salvar_dados_frota(st.session_state.banco_dados)
+                st.toast("Veículo Salvo com Sucesso!", icon="✅")
+                time.sleep(0.5) # Pausa pequena
                 st.rerun()
         
         if item_frota != "-- Novo Veículo --" and st.button("Excluir Veículo"):
             del st.session_state.banco_dados[item_frota]
             salvar_dados_frota(st.session_state.banco_dados)
+            st.toast("Veículo Excluído!", icon="🗑️")
+            time.sleep(0.5)
             st.rerun()
 
         st.markdown("---")
@@ -440,11 +447,15 @@ with st.sidebar:
                 elif item_caixa != "-- Nova Caixa --":
                     st.session_state.banco_caixas[item_caixa] = nova_caixa
                 salvar_dados_caixas(st.session_state.banco_caixas)
+                st.toast("Caixa Salva com Sucesso!", icon="✅")
+                time.sleep(0.5)
                 st.rerun()
 
         if item_caixa != "-- Nova Caixa --" and st.button("Excluir Caixa"):
             del st.session_state.banco_caixas[item_caixa]
             salvar_dados_caixas(st.session_state.banco_caixas)
+            st.toast("Caixa Excluída!", icon="🗑️")
+            time.sleep(0.5)
             st.rerun()
 
 # --- ÁREA PRINCIPAL ---
