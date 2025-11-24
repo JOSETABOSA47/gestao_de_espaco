@@ -5,20 +5,62 @@ import json
 import os
 import hashlib
 
-# --- CONFIGURAÇÃO DA PÁGINA ---
+# --- CONFIGURAÇÃO DA PÁGINA (LINHA OBRIGATÓRIA NO INÍCIO) ---
 st.set_page_config(
     page_title="Portal Logístico",
-    page_icon="logo.png", 
+    page_icon="logo.png", # Ou "🚛" se ainda não subiu a logo
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded" # <--- ISSO FORÇA O MENU A APARECER ABERTO
 )
 
-# --- CSS PERSONALIZADO ---
 st.markdown("""
 <style>
 html, body, .stApp {
-    background-color: #08131F !important;
+    background-color: #08131F !important;   /* Fundo igual ao do tema */
 }
+</style>
+""", unsafe_allow_html=True)
+
+
+# ==============================================================================
+# 2. CSS VISUAL (CORRIGIDO PARA NÃO SUMIR COM A BARRA LATERAL)
+# ==============================================================================
+# Remove ícones e barra superior do Streamlit
+hide_streamlit_mobile = """
+<style>
+
+/* Remove rodapé Streamlit no navegador e no WebView */
+footer, .st-emotion-cache-16txtl3, .st-emotion-cache-q8sbsg {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* Remove o menu dos 3 pontinhos do Streamlit */
+#MainMenu, header[data-testid="stHeader"] div:nth-child(3) {
+    display: none !important;
+}
+
+/* Remove o botão "Edit" */
+button[kind="header"] {
+    display: none !important;
+}
+
+/* Remove a marca d’água do Streamlit em celulares */
+.stApp footer {
+    display: none !important;
+}
+
+</style>
+"""
+
+st.markdown(hide_streamlit_mobile, unsafe_allow_html=True)
+
+
+st.markdown("""
+<style>
 .stButton>button {
     background-color: #1A87C9 !important;
     color: white !important;
@@ -26,26 +68,11 @@ html, body, .stApp {
     border: 1px solid #1A87C9 !important;
 }
 .stButton>button:hover {
-    background-color: #3FAE2A !important;
+    background-color: #3FAE2A !important; /* verde da logo */
     border-color: #3FAE2A !important;
 }
 </style>
 """, unsafe_allow_html=True)
-
-# CSS PARA LIMPAR A INTERFACE (MANTENDO MENU)
-hide_streamlit_style = """
-            <style>
-            [data-testid="stToolbar"] {display: none !important;}
-            [data-testid="stDecoration"] {display: none !important;}
-            footer {display: none !important;}
-            header {background-color: transparent !important;}
-            [data-testid="stSidebarCollapsedControl"] button {
-                color: white !important;
-                font-weight: bold;
-            }
-            </style>
-            """
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # ==============================================================================
 # SEGURANÇA E CONFIGURAÇÕES
