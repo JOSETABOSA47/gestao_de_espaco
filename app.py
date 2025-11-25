@@ -8,60 +8,23 @@ import time
 
 # --- CONFIGURAÇÃO DA PÁGINA (LINHA OBRIGATÓRIA NO INÍCIO) ---
 st.set_page_config(
-    page_title="Portal Logístico",
+    page_title="Gestão de espaços",
     page_icon="logo.png", # Ou "🚛" se ainda não subiu a logo
     layout="wide",
     initial_sidebar_state="expanded" # <--- ISSO FORÇA O MENU A APARECER ABERTO
 )
 
+# ==============================================================================
+# CSS VISUAL + BOTÃO WHATSAPP
+# ==============================================================================
 st.markdown("""
 <style>
+/* Fundo Geral */
 html, body, .stApp {
-    background-color: #08131F !important;   /* Fundo igual ao do tema */
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-# ==============================================================================
-# 2. CSS VISUAL (CORRIGIDO PARA NÃO SUMIR COM A BARRA LATERAL)
-# ==============================================================================
-# Remove ícones e barra superior do Streamlit
-hide_streamlit_mobile = """
-<style>
-
-/* Remove rodapé Streamlit no navegador e no WebView */
-footer, .st-emotion-cache-16txtl3, .st-emotion-cache-q8sbsg {
-    display: none !important;
-    visibility: hidden !important;
-    height: 0px !important;
-    padding: 0 !important;
-    margin: 0 !important;
+    background-color: #08131F !important;
 }
 
-/* Remove o menu dos 3 pontinhos do Streamlit */
-#MainMenu, header[data-testid="stHeader"] div:nth-child(3) {
-    display: none !important;
-}
-
-/* Remove o botão "Edit" */
-button[kind="header"] {
-    display: none !important;
-}
-
-/* Remove a marca d’água do Streamlit em celulares */
-.stApp footer {
-    display: none !important;
-}
-
-</style>
-"""
-
-st.markdown(hide_streamlit_mobile, unsafe_allow_html=True)
-
-
-st.markdown("""
-<style>
+/* Botões Padrão */
 .stButton>button {
     background-color: #1A87C9 !important;
     color: white !important;
@@ -69,10 +32,47 @@ st.markdown("""
     border: 1px solid #1A87C9 !important;
 }
 .stButton>button:hover {
-    background-color: #3FAE2A !important; /* verde da logo */
+    background-color: #3FAE2A !important;
     border-color: #3FAE2A !important;
 }
+
+/* Esconder elementos nativos do Streamlit */
+footer, .st-emotion-cache-16txtl3, .st-emotion-cache-q8sbsg { display: none !important; }
+#MainMenu, header[data-testid="stHeader"] div:nth-child(3) { display: none !important; }
+button[kind="header"] { display: none !important; }
+.stApp footer { display: none !important; }
+
+/* === BOTÃO FLUTUANTE DO WHATSAPP === */
+.float{
+	position:fixed;
+	width:60px;
+	height:60px;
+	bottom:40px;
+	right:40px;
+	background-color:#25d366;
+	color:#FFF;
+	border-radius:50px;
+	text-align:center;
+  font-size:30px;
+	box-shadow: 2px 2px 3px #999;
+  z-index:100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.3s;
+}
+.float:hover {
+    background-color: #128C7E;
+    transform: scale(1.1);
+    color: white;
+}
 </style>
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+<a href="https://wa.me/5585998374345?text=Olá!%20Vim%20pelo%20Gestão%20de%20espaços%20e%20quero%20saber%20mais." class="float" target="_blank">
+<i class="fa fa-whatsapp my-float"></i>
+</a>
 """, unsafe_allow_html=True)
 
 # ==============================================================================
@@ -282,8 +282,18 @@ def acao_logout():
 if not st.session_state['logado']:
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
-        st.title("🚛 Portal Logístico")
-        st.markdown("---")
+        st.title("🚛 Gestão de espaços")
+        # st.markdown("---")
+        # --- AQUI ESTÁ A FRASE QUE VENDE ---
+        st.markdown("""
+        <div style='background-color: #1A2634; padding: 15px; border-radius: 10px; border-left: 5px solid #3FAE2A; margin-bottom: 20px;'>
+        <p style='color: white; margin: 0; font-size: 16px;'>
+        <b>Pare de perder viagem.</b><br>
+        Calcule a cubagem da sua carga em segundos, evite prejuízos e gere relatórios profissionais.
+        </p>
+        </div>
+        """, unsafe_allow_html=True)
+        # -----------------------------------
         tab1, tab2 = st.tabs(["Entrar", "Nova Conta"])
         with tab1:
             st.text_input("Usuário", key="login_user")
