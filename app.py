@@ -393,10 +393,10 @@ with st.sidebar:
             if item_frota == "-- Novo Veículo --":
                 nome_f = st.text_input("Nome (ex: Truck)")
                 tipo_f = st.radio("Tipo", ["Veículo", "Armazém"], horizontal=True)
-                c_f = st.number_input("C (m)", 3.00)
-                l_f = st.number_input("L (m)", 2.00)
-                a_f = st.number_input("A (m)", 2.50)
-                p_f = st.number_input("Peso (kg)", 1000)
+                c_f = st.number_input("C (m)", 0.00)
+                l_f = st.number_input("L (m)", 0.00)
+                a_f = st.number_input("A (m)", 0.00)
+                p_f = st.number_input("Peso (kg)", 0000)
             else:
                 d = st.session_state.banco_dados[item_frota]
                 nome_f = st.text_input("Nome", value=item_frota, disabled=True)
