@@ -5,13 +5,14 @@ import json
 import os
 import hashlib
 import time
+from datetime import datetime
 
-# --- CONFIGURAÇÃO DA PÁGINA (LINHA OBRIGATÓRIA NO INÍCIO) ---
+# --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
     page_title="Gestão de espaços",
-    page_icon="logo.png", # Ou "🚛" se ainda não subiu a logo
+    page_icon="logo.png",
     layout="wide",
-    initial_sidebar_state="expanded" # <--- ISSO FORÇA O MENU A APARECER ABERTO
+    initial_sidebar_state="expanded"
 )
 
 # ==============================================================================
@@ -44,23 +45,23 @@ button[kind="header"] { display: none !important; }
 
 /* === BOTÃO FLUTUANTE DO WHATSAPP === */
 .float{
-	position:fixed;
-	width:60px;
-	height:60px;
-	bottom:40px;
-	right:40px;
-	background-color:#25d366;
-	color:#FFF;
-	border-radius:50px;
-	text-align:center;
-  font-size:30px;
-	box-shadow: 2px 2px 3px #999;
-  z-index:100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  transition: all 0.3s;
+    position:fixed;
+    width:60px;
+    height:60px;
+    bottom:40px;
+    right:40px;
+    background-color:#25d366;
+    color:#FFF;
+    border-radius:50px;
+    text-align:center;
+    font-size:30px;
+    box-shadow: 2px 2px 3px #999;
+    z-index:100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.3s;
 }
 .float:hover {
     background-color: #128C7E;
@@ -85,11 +86,11 @@ except FileNotFoundError:
     SENHA_MASTER_FIXA = "123456"
 
 ARQUIVO_CREDENCIAIS = 'credenciais.json'
-# Dados Padrão VEÍCULOS
+
+# Dados Padrão
 DADOS_PADRAO_FROTA = {
     "VUC Padrão": {"categoria": "Veículo", "comp": 4.50, "larg": 2.20, "alt": 2.30, "peso_max": 3500},
 }
-# Dados Padrão CAIXAS
 DADOS_PADRAO_CAIXAS = {
     "Caixa Padrão P": {"comp": 30, "larg": 20, "alt": 20, "peso": 1.5},
     "Caixa Padrão M": {"comp": 50, "larg": 40, "alt": 40, "peso": 5.0},
@@ -121,7 +122,6 @@ def salvar_novo_usuario(usuario, senha):
         json.dump(usuarios, f, indent=4)
     return True
 
-# === FUNÇÕES DE ADMINISTRAÇÃO ===
 def atualizar_senha_usuario(usuario, nova_senha):
     usuarios = carregar_usuarios()
     if usuario in usuarios:
@@ -132,32 +132,29 @@ def atualizar_senha_usuario(usuario, nova_senha):
     return False
 
 def excluir_usuario_completo(usuario):
-    # 1. Remove do arquivo de credenciais
     usuarios = carregar_usuarios()
     if usuario in usuarios:
         del usuarios[usuario]
         with open(ARQUIVO_CREDENCIAIS, 'w', encoding='utf-8') as f:
             json.dump(usuarios, f, indent=4)
-        
-        # 2. Remove arquivos de dados para limpar o servidor
         try: os.remove(f"dados_{usuario}.json")
         except: pass
         try: os.remove(f"caixas_{usuario}.json")
         except: pass
-        
+        try: os.remove(f"historico_{usuario}.json")
+        except: pass
         return True
     return False
 
-# --- GERENCIAMENTO DE ARQUIVOS (FROTA E CAIXAS) ---
+# --- GERENCIAMENTO DE ARQUIVOS ---
 def pegar_cliente_ativo():
     if st.session_state.get('usuario_logado') == USUARIO_MASTER:
         return st.session_state.get('cliente_visualizado', 'admin_sistema')
     else:
         return st.session_state.get('usuario_logado')
 
-# 1. FROTA (Veículos/Armazéns)
-def pegar_arquivo_frota():
-    return f"dados_{pegar_cliente_ativo()}.json"
+# 1. FROTA
+def pegar_arquivo_frota(): return f"dados_{pegar_cliente_ativo()}.json"
 
 def carregar_dados_frota():
     arquivo = pegar_arquivo_frota()
@@ -171,9 +168,8 @@ def salvar_dados_frota(dados):
     with open(pegar_arquivo_frota(), 'w', encoding='utf-8') as f:
         json.dump(dados, f, indent=4, ensure_ascii=False)
 
-# 2. CAIXAS (Produtos)
-def pegar_arquivo_caixas():
-    return f"caixas_{pegar_cliente_ativo()}.json"
+# 2. CAIXAS
+def pegar_arquivo_caixas(): return f"caixas_{pegar_cliente_ativo()}.json"
 
 def carregar_dados_caixas():
     arquivo = pegar_arquivo_caixas()
@@ -185,6 +181,21 @@ def carregar_dados_caixas():
 
 def salvar_dados_caixas(dados):
     with open(pegar_arquivo_caixas(), 'w', encoding='utf-8') as f:
+        json.dump(dados, f, indent=4, ensure_ascii=False)
+
+# 3. HISTÓRICO
+def pegar_arquivo_historico(): return f"historico_{pegar_cliente_ativo()}.json"
+
+def carregar_historico():
+    arquivo = pegar_arquivo_historico()
+    if os.path.exists(arquivo):
+        try:
+            with open(arquivo, 'r', encoding='utf-8') as f: return json.load(f)
+        except: return {}
+    return {}
+
+def salvar_historico(dados):
+    with open(pegar_arquivo_historico(), 'w', encoding='utf-8') as f:
         json.dump(dados, f, indent=4, ensure_ascii=False)
 
 # --- PDF ---
@@ -228,7 +239,6 @@ if 'logado' not in st.session_state:
 if 'cliente_visualizado' not in st.session_state:
     st.session_state['cliente_visualizado'] = None
 
-# Ações de Login
 def acao_login():
     user = st.session_state.login_user
     pwd = st.session_state.login_pwd
@@ -247,7 +257,6 @@ def acao_login():
         st.session_state['logado'] = True
         st.session_state['usuario_logado'] = user
         st.session_state['cliente_visualizado'] = user
-        # Carrega dados específicos do cliente
         st.session_state.banco_dados = carregar_dados_frota()
         st.session_state.banco_caixas = carregar_dados_caixas()
         st.session_state.carga_atual = []
@@ -269,22 +278,19 @@ def acao_cadastro():
         return
     if salvar_novo_usuario(novo_user, nova_senha):
         st.toast(f"Usuário {novo_user} criado com sucesso!", icon="✅")
-        time.sleep(1.5) # Pausa para ler a mensagem
+        time.sleep(1.5)
     else:
         st.toast("Usuário já existe.", icon="❌")
 
 def acao_logout():
     st.session_state['logado'] = False
     st.session_state['usuario_logado'] = None
-    # Removido st.rerun() para evitar erro de callback
 
 # ================= TELA LOGIN =================
 if not st.session_state['logado']:
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
         st.title("🚛 Gestão de espaços")
-        # st.markdown("---")
-        # --- AQUI ESTÁ A FRASE QUE VENDE ---
         st.markdown("""
         <div style='background-color: #1A2634; padding: 15px; border-radius: 10px; border-left: 5px solid #3FAE2A; margin-bottom: 20px;'>
         <p style='color: white; margin: 0; font-size: 16px;'>
@@ -293,7 +299,7 @@ if not st.session_state['logado']:
         </p>
         </div>
         """, unsafe_allow_html=True)
-        # -----------------------------------
+        
         tab1, tab2 = st.tabs(["Entrar", "Nova Conta"])
         with tab1:
             st.text_input("Usuário", key="login_user")
@@ -308,11 +314,13 @@ if not st.session_state['logado']:
 
 # ================= SISTEMA LOGADO =================
 
-# Inicializa variáveis se não existirem
 if 'banco_dados' not in st.session_state or st.session_state.banco_dados is None:
     st.session_state.banco_dados = carregar_dados_frota()
 if 'banco_caixas' not in st.session_state or st.session_state.banco_caixas is None:
     st.session_state.banco_caixas = carregar_dados_caixas()
+
+# Carrega histórico
+historico_db = carregar_historico()
 
 with st.sidebar:
     usuario_atual = st.session_state['usuario_logado']
@@ -339,39 +347,22 @@ with st.sidebar:
                     st.session_state.carga_atual = []
                     st.rerun()
                 
-                # ==== AQUI ESTÁ A NOVA ÁREA DE GESTÃO DE CONTA ====
-                with st.expander("⚙️ Gerenciar Conta do Cliente"):
+                with st.expander("⚙️ Gerenciar Conta"):
                     st.markdown(f"**Cliente:** {cliente_selecionado}")
-                    
-                    # 1. TROCAR SENHA
                     nova_senha_admin = st.text_input("Nova Senha:", type="password", key="adm_new_pass")
                     if st.button("🔄 Atualizar Senha"):
                         if len(nova_senha_admin) > 0:
                             if atualizar_senha_usuario(cliente_selecionado, nova_senha_admin):
-                                st.toast("Senha alterada com sucesso!", icon="✅")
-                            else:
-                                st.error("Erro ao alterar.")
-                        else:
-                            st.warning("Digite uma senha.")
+                                st.toast("Senha alterada!", icon="✅")
+                            else: st.error("Erro.")
                     
                     st.markdown("---")
-                    
-                    # 2. EXCLUIR CLIENTE
-                    st.markdown("🚨 **Zona de Perigo**")
-                    confirmar_exclusao = st.checkbox("Confirmar exclusão definitiva")
                     if st.button("🗑️ EXCLUIR CLIENTE"):
-                        if confirmar_exclusao:
-                            if excluir_usuario_completo(cliente_selecionado):
-                                st.toast(f"Cliente {cliente_selecionado} removido!", icon="🗑️")
-                                time.sleep(1.5) # Pausa dramática
-                                st.session_state['cliente_visualizado'] = None
-                                st.rerun()
-                            else:
-                                st.error("Erro ao excluir.")
-                        else:
-                            st.warning("Marque a caixa acima para confirmar.")
-                # ===================================================
-
+                        if excluir_usuario_completo(cliente_selecionado):
+                            st.toast(f"Removido!", icon="🗑️")
+                            time.sleep(1.0)
+                            st.session_state['cliente_visualizado'] = None
+                            st.rerun()
             else:
                 st.session_state['cliente_visualizado'] = None
         st.markdown("---")
@@ -382,91 +373,112 @@ with st.sidebar:
     if usuario_atual == USUARIO_MASTER and not st.session_state['cliente_visualizado']:
         st.info("👈 Selecione um cliente.")
     else:
-        # ==========================================
-        # 1. CADASTRO DE FROTA / ARMAZÉM
-        # ==========================================
-        st.markdown("### 🚛 Frota e Espaços")
-        opcoes_frota = ["-- Novo Veículo --"] + list(st.session_state.banco_dados.keys())
-        item_frota = st.selectbox("Editar Veículo:", opcoes_frota)
-        
-        with st.form("form_frota"):
-            if item_frota == "-- Novo Veículo --":
-                nome_f = st.text_input("Nome (ex: Truck)")
-                tipo_f = st.radio("Tipo", ["Veículo", "Armazém"], horizontal=True)
-                c_f = st.number_input("C (m)", 0.00)
-                l_f = st.number_input("L (m)", 0.00)
-                a_f = st.number_input("A (m)", 0.00)
-                p_f = st.number_input("Peso (kg)", 0000)
-            else:
-                d = st.session_state.banco_dados[item_frota]
-                nome_f = st.text_input("Nome", value=item_frota, disabled=True)
-                cat_atual = d.get('categoria', 'Veículo')
-                tipo_f = st.radio("Tipo", ["Veículo", "Armazém"], index=0 if cat_atual=="Veículo" else 1)
-                c_f = st.number_input("C (m)", value=d['comp'])
-                l_f = st.number_input("L (m)", value=d['larg'])
-                a_f = st.number_input("A (m)", value=d['alt'])
-                p_f = st.number_input("Peso (kg)", value=d['peso_max'])
-            
-            if st.form_submit_button("Salvar Veículo"):
-                novo_dado = {"categoria": tipo_f, "comp": c_f, "larg": l_f, "alt": a_f, "peso_max": p_f}
-                if item_frota == "-- Novo Veículo --" and nome_f:
-                    st.session_state.banco_dados[nome_f] = novo_dado
-                elif item_frota != "-- Novo Veículo --":
-                    st.session_state.banco_dados[item_frota] = novo_dado
-                salvar_dados_frota(st.session_state.banco_dados)
-                st.toast("Veículo Salvo com Sucesso!", icon="✅")
-                time.sleep(0.5) # Pausa pequena
-                st.rerun()
-        
-        if item_frota != "-- Novo Veículo --" and st.button("Excluir Veículo"):
-            del st.session_state.banco_dados[item_frota]
-            salvar_dados_frota(st.session_state.banco_dados)
-            st.toast("Veículo Excluído!", icon="🗑️")
-            time.sleep(0.5)
-            st.rerun()
+        # === HISTÓRICO DE CARGAS ===
+        st.markdown("### 📜 Histórico de Cargas")
+        lista_hist = list(historico_db.keys())
+        if not lista_hist:
+            st.caption("Nenhuma carga salva.")
+        else:
+            hist_selecionado = st.selectbox("Selecione para Carregar:", ["-- Selecione --"] + lista_hist)
+            if hist_selecionado != "-- Selecione --":
+                col_h1, col_h2 = st.columns(2)
+                if col_h1.button("📂 Carregar"):
+                    dados_salvos = historico_db[hist_selecionado]
+                    st.session_state.carga_atual = dados_salvos["itens"]
+                    st.session_state["seletor_veiculo"] = dados_salvos["veiculo"]
+                    
+                    # Carrega o slider
+                    perda_salva = dados_salvos.get("perda", 15)
+                    st.session_state["slider_perda"] = perda_salva 
+
+                    # --- NOVIDADE: Preenche o campo de texto ---
+                    st.session_state["input_nome_salvar"] = hist_selecionado
+                    # -------------------------------------------
+
+                    st.toast(f"Carga '{hist_selecionado}' carregada!", icon="📂")
+                    time.sleep(0.5)
+                    st.rerun()
+                
+                if col_h2.button("🗑️", help="Excluir do Histórico"):
+                    del historico_db[hist_selecionado]
+                    salvar_historico(historico_db)
+                    st.toast("Histórico apagado.", icon="🗑️")
+                    time.sleep(0.5)
+                    st.rerun()
 
         st.markdown("---")
 
-        # ==========================================
-        # 2. CADASTRO DE CAIXAS / PRODUTOS
-        # ==========================================
-        st.markdown("### 📦 Minhas Caixas")
-        opcoes_caixa = ["-- Nova Caixa --"] + list(st.session_state.banco_caixas.keys())
-        item_caixa = st.selectbox("Editar Caixa:", opcoes_caixa)
-
-        with st.form("form_caixa"):
-            if item_caixa == "-- Nova Caixa --":
-                nome_c = st.text_input("Nome do Produto/Caixa")
-                # Padrão para nova caixa
-                comp_c = st.number_input("Comp (cm)", value=40)
-                larg_c = st.number_input("Larg (cm)", value=30)
-                alt_c = st.number_input("Alt (cm)", value=20)
-                peso_c = st.number_input("Peso Unit (kg)", value=1.0)
-            else:
-                dc = st.session_state.banco_caixas[item_caixa]
-                nome_c = st.text_input("Nome", value=item_caixa, disabled=True)
-                comp_c = st.number_input("Comp (cm)", value=dc['comp'])
-                larg_c = st.number_input("Larg (cm)", value=dc['larg'])
-                alt_c = st.number_input("Alt (cm)", value=dc['alt'])
-                peso_c = st.number_input("Peso Unit (kg)", value=dc['peso'])
-
-            if st.form_submit_button("Salvar Caixa"):
-                nova_caixa = {"comp": comp_c, "larg": larg_c, "alt": alt_c, "peso": peso_c}
-                if item_caixa == "-- Nova Caixa --" and nome_c:
-                    st.session_state.banco_caixas[nome_c] = nova_caixa
-                elif item_caixa != "-- Nova Caixa --":
-                    st.session_state.banco_caixas[item_caixa] = nova_caixa
-                salvar_dados_caixas(st.session_state.banco_caixas)
-                st.toast("Caixa Salva com Sucesso!", icon="✅")
-                time.sleep(0.5)
+        # === CADASTROS ===
+        with st.expander("🚛 Editar Frota / Espaços"):
+            opcoes_frota = ["-- Novo Veículo --"] + list(st.session_state.banco_dados.keys())
+            item_frota = st.selectbox("Veículo:", opcoes_frota)
+            
+            with st.form("form_frota"):
+                if item_frota == "-- Novo Veículo --":
+                    nome_f = st.text_input("Nome")
+                    tipo_f = st.radio("Tipo", ["Veículo", "Armazém"], horizontal=True)
+                    c_f = st.number_input("C (m)", 0.00)
+                    l_f = st.number_input("L (m)", 0.00)
+                    a_f = st.number_input("A (m)", 0.00)
+                    p_f = st.number_input("Peso (kg)", 0000)
+                else:
+                    d = st.session_state.banco_dados[item_frota]
+                    nome_f = st.text_input("Nome", value=item_frota, disabled=True)
+                    cat_atual = d.get('categoria', 'Veículo')
+                    tipo_f = st.radio("Tipo", ["Veículo", "Armazém"], index=0 if cat_atual=="Veículo" else 1)
+                    c_f = st.number_input("C (m)", value=d['comp'])
+                    l_f = st.number_input("L (m)", value=d['larg'])
+                    a_f = st.number_input("A (m)", value=d['alt'])
+                    p_f = st.number_input("Peso (kg)", value=d['peso_max'])
+                
+                if st.form_submit_button("Salvar Veículo"):
+                    novo_dado = {"categoria": tipo_f, "comp": c_f, "larg": l_f, "alt": a_f, "peso_max": p_f}
+                    chave = nome_f if item_frota == "-- Novo Veículo --" else item_frota
+                    if chave:
+                        st.session_state.banco_dados[chave] = novo_dado
+                        salvar_dados_frota(st.session_state.banco_dados)
+                        st.toast("Salvo!", icon="✅")
+                        time.sleep(0.5)
+                        st.rerun()
+            
+            if item_frota != "-- Novo Veículo --" and st.button("Excluir Veículo"):
+                del st.session_state.banco_dados[item_frota]
+                salvar_dados_frota(st.session_state.banco_dados)
                 st.rerun()
 
-        if item_caixa != "-- Nova Caixa --" and st.button("Excluir Caixa"):
-            del st.session_state.banco_caixas[item_caixa]
-            salvar_dados_caixas(st.session_state.banco_caixas)
-            st.toast("Caixa Excluída!", icon="🗑️")
-            time.sleep(0.5)
-            st.rerun()
+        with st.expander("📦 Editar Caixas / Produtos"):
+            opcoes_caixa = ["-- Nova Caixa --"] + list(st.session_state.banco_caixas.keys())
+            item_caixa = st.selectbox("Caixa:", opcoes_caixa)
+
+            with st.form("form_caixa"):
+                if item_caixa == "-- Nova Caixa --":
+                    nome_c = st.text_input("Nome")
+                    comp_c = st.number_input("C (cm)", 40)
+                    larg_c = st.number_input("L (cm)", 30)
+                    alt_c = st.number_input("A (cm)", 20)
+                    peso_c = st.number_input("Kg", 1.0)
+                else:
+                    dc = st.session_state.banco_caixas[item_caixa]
+                    nome_c = st.text_input("Nome", value=item_caixa, disabled=True)
+                    comp_c = st.number_input("C (cm)", value=dc['comp'])
+                    larg_c = st.number_input("L (cm)", value=dc['larg'])
+                    alt_c = st.number_input("A (cm)", value=dc['alt'])
+                    peso_c = st.number_input("Kg", value=dc['peso'])
+
+                if st.form_submit_button("Salvar Caixa"):
+                    nova_caixa = {"comp": comp_c, "larg": larg_c, "alt": alt_c, "peso": peso_c}
+                    chave = nome_c if item_caixa == "-- Nova Caixa --" else item_caixa
+                    if chave:
+                        st.session_state.banco_caixas[chave] = nova_caixa
+                        salvar_dados_caixas(st.session_state.banco_caixas)
+                        st.toast("Salvo!", icon="✅")
+                        time.sleep(0.5)
+                        st.rerun()
+
+            if item_caixa != "-- Nova Caixa --" and st.button("Excluir Caixa"):
+                del st.session_state.banco_caixas[item_caixa]
+                salvar_dados_caixas(st.session_state.banco_caixas)
+                st.rerun()
 
 # --- ÁREA PRINCIPAL ---
 if usuario_atual == USUARIO_MASTER and not st.session_state['cliente_visualizado']:
@@ -488,7 +500,8 @@ col1, col2 = st.columns([1, 1.5])
 with col1:
     st.subheader("1. Seleção")
     lista = ["-- Digitar Manual --"] + list(st.session_state.banco_dados.keys())
-    selecao = st.selectbox("Veículo/Armazém", lista)
+    
+    selecao = st.selectbox("Veículo/Armazém", lista, key="seletor_veiculo")
     
     if selecao == "-- Digitar Manual --":
         st.info("Modo Manual")
@@ -504,17 +517,17 @@ with col1:
         st.success(f"Selecionado: {selecao}")
 
     vol_total = comp_f * larg_f * alt_f
-    perda = st.slider("Margem Perda", 0, 30, 15, format="%d%%")
+    
+    perda = st.slider("Margem Perda", 0, 30, 15, format="%d%%", key="slider_perda")
+
     vol_util = vol_total * (1 - (perda/100))
     st.caption(f"Vol. Útil: {vol_util:.2f} m³ | Peso Max: {peso_f} kg")
     
     st.markdown("#### Adicionar Carga")
     
-    # SELETOR DE CAIXA SALVA (Para preencher automático)
     lista_caixas_salvas = ["-- Manual --"] + list(st.session_state.banco_caixas.keys())
     box_selecionada = st.selectbox("Usar Item Salvo:", lista_caixas_salvas)
 
-    # Define valores padrão (inputs)
     def_c, def_l, def_a, def_p = 40, 30, 20, 1.0
     
     if box_selecionada != "-- Manual --":
@@ -526,10 +539,7 @@ with col1:
 
     with st.form("add"):
         q = st.number_input("Qtd", 1, value=10)
-        # Se escolheu caixa salva, usa os valores dela como 'value'
-        # Se for manual, o usuário edita livremente
         p = st.number_input("Peso Unit (kg)", 0.0, value=float(def_p))
-        
         c1, c2, c3 = st.columns(3)
         cc = c1.number_input("C (cm)", value=int(def_c))
         ll = c2.number_input("L (cm)", value=int(def_l))
@@ -537,12 +547,11 @@ with col1:
         
         if st.form_submit_button("➕ Adicionar"):
             v_u = (cc*ll*aa)/1000000
-            # Nome do item na lista
             desc = box_selecionada if box_selecionada != "-- Manual --" else f"{cc}x{ll}x{aa}"
             
             st.session_state.carga_atual.append({
                 "Qtd": q, 
-                "Dimensões": desc, # Mostra o nome do produto ou as medidas
+                "Dimensões": desc, 
                 "Medidas Reais": f"{cc}x{ll}x{aa}",
                 "Vol. Unit (m³)": v_u, "Vol. Total (m³)": v_u*q,
                 "Peso Unit (kg)": p, "Peso Total (kg)": p*q
@@ -552,6 +561,7 @@ with col1:
 with col2:
     st.subheader("2. Análise")
     if st.session_state.carga_atual:
+        # LISTA DE ITENS
         for i, item in enumerate(st.session_state.carga_atual):
             c1, c2, c3, c4 = st.columns([1, 3, 2, 1])
             c1.write(f"**{item['Qtd']}x**")
@@ -561,11 +571,12 @@ with col2:
                 st.session_state.carga_atual.pop(i)
                 st.rerun()
         
-        if st.button("🗑️ Limpar"):
+        if st.button("🗑️ Limpar tudo"):
             st.session_state.carga_atual = []
             st.rerun()
             
         st.markdown("---")
+        # CÁLCULOS
         df = pd.DataFrame(st.session_state.carga_atual)
         v_ocup = df["Vol. Total (m³)"].sum()
         p_ocup = df["Peso Total (kg)"].sum()
@@ -596,9 +607,35 @@ with col2:
         else:
             st.error("❌ REPROVADO")
             
+        # PDF
         if st.button("📄 PDF"):
             totais = {"vol_ocupado": v_ocup, "vol_util": vol_util, "peso_ocupado": p_ocup, "peso_max": peso_f}
             pdf_data = gerar_pdf(st.session_state.carga_atual, selecao, cat_f, pct_v, pct_p, status, totais, cliente_ativo)
-            st.download_button("Baixar", pdf_data, "relatorio.pdf", "application/pdf")
+            st.download_button("Baixar PDF", pdf_data, "relatorio.pdf", "application/pdf")
+        
+        st.markdown("---")
+        
+        # === ÁREA DE SALVAR HISTÓRICO (MODIFICADA) ===
+        st.markdown("### 💾 Salvar no Histórico")
+        with st.form("form_save"):
+            # --- NOVIDADE: KEY ADICIONADA ---
+            nome_save = st.text_input("Nome da Carga (ex: Mudança João 25/11)", key="input_nome_salvar")
+            # --------------------------------
+            if st.form_submit_button("Salvar Carga"):
+                if nome_save:
+                    nova_entrada = {
+                        "veiculo": selecao,
+                        "itens": st.session_state.carga_atual,
+                        "perda": st.session_state.slider_perda,
+                        "data": datetime.now().strftime("%d/%m/%Y %H:%M")
+                    }
+                    historico_db[nome_save] = nova_entrada
+                    salvar_historico(historico_db)
+                    st.toast("Carga salva com sucesso!", icon="💾")
+                    time.sleep(1.0)
+                    st.rerun()
+                else:
+                    st.warning("Digite um nome para salvar.")
+
     else:
         st.info("Lista vazia.")
