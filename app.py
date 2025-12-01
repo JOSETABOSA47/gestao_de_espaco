@@ -453,10 +453,10 @@ with st.sidebar:
             with st.form("form_caixa"):
                 if item_caixa == "-- Nova Caixa --":
                     nome_c = st.text_input("Nome")
-                    comp_c = st.number_input("C (cm)", 40)
-                    larg_c = st.number_input("L (cm)", 30)
-                    alt_c = st.number_input("A (cm)", 20)
-                    peso_c = st.number_input("Kg", 1.0)
+                    comp_c = st.number_input("C (cm)", 0)
+                    larg_c = st.number_input("L (cm)", 0)
+                    alt_c = st.number_input("A (cm)", 0)
+                    peso_c = st.number_input("Kg", 0)
                 else:
                     dc = st.session_state.banco_caixas[item_caixa]
                     nome_c = st.text_input("Nome", value=item_caixa, disabled=True)
